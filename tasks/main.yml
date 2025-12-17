@@ -1,0 +1,57 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Ensure required packages are installed
+  ansible.builtin.apt:
+    name:
+      - wget
+      - gpg
+      - apt-transport-https
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Download Microsoft signing key
+  ansible.builtin.get_url:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    dest: /tmp/microsoft.asc
+    mode: '0644'
+
+- name: Convert Microsoft signing key to GPG keyring
+  ansible.builtin.command:
+    cmd: gpg --dearmor -o /usr/share/keyrings/microsoft.gpg /tmp/microsoft.asc
+    creates: /usr/share/keyrings/microsoft.gpg
+
+- name: Set correct permissions on Microsoft keyring
+  ansible.builtin.file:
+    path: /usr/share/keyrings/microsoft.gpg
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Remove temporary Microsoft signing key
+  ansible.builtin.file:
+    path: /tmp/microsoft.asc
+    state: absent
+
+- name: Add VS Code apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/vscode.sources
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      Types: deb
+      URIs: https://packages.microsoft.com/repos/code
+      Suites: stable
+      Components: main
+      Architectures: amd64 arm64 armhf
+      Signed-By: /usr/share/keyrings/microsoft.gpg
+
+- name: Update apt cache after adding VS Code repository
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Install Visual Studio Code
+  ansible.builtin.apt:
+    name: code
+    state: present

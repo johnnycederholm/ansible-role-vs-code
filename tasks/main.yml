@@ -8,7 +8,6 @@
       - apt-transport-https
     state: present
     update_cache: true
-    cache_valid_time: 3600
 
 - name: Download Microsoft signing key
   ansible.builtin.get_url:
